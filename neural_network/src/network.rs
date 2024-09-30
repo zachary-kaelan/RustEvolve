@@ -1,13 +1,13 @@
 use crate::*;
-use ndarray::Array2;
+use ndarray::{Array1, Array2};
 
 #[derive(Clone, Debug)]
 pub struct Network {
-    layers: Vec<Layer>,
+    pub layers: Vec<Layer>,
 }
 
 impl Network {
-    pub(crate) fn new(layers: Vec<Layer>) -> Self {
+    pub fn new(layers: Vec<Layer>) -> Self {
         Self { layers }
     }
 
@@ -16,12 +16,13 @@ impl Network {
             .windows(2)
             .map(|layers| Layer::random(LayerType::Calc, layers[0], layers[1], rng))
             .collect();
+        let len = layers.len();
         layers[0].layer_type = LayerType::Input;
-        layers[layers.len() - 1].layer_type = LayerType::Output;
+        layers[len - 1].layer_type = LayerType::Output;
         Self { layers }
     }
 
-    pub fn forward(&self, inputs: Array2<f32>) -> Array2<f32> {
+    pub fn forward(&self, inputs: Array1<f32>) -> Array1<f32> {
         self.layers
             .iter()
             .fold(inputs, |inputs, layer| layer.forward(inputs))
