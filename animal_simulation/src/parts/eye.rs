@@ -41,7 +41,10 @@ impl Eye {
             let cell = angle / self.fov_angle * (self.cells as f32);
             let cell = (cell as usize).min(cells.len() - 1);
 
-            cells[cell] += (self.fov_range - dist) / self.fov_range;
+            let dist = (self.fov_range - dist) / self.fov_range;
+            if cells[cell] == 0.0 || dist < cells[cell] {
+                cells[cell] = dist;
+            }
         }
 
         cells
