@@ -1,2 +1,4 @@
-/neural_network/target/
-/neural_network/target/*
+*/target
+*/target/**
+neural_network/target
+neural_network/target/**
