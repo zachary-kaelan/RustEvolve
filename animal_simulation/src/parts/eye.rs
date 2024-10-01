@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::*;
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct Eye {
@@ -18,8 +19,9 @@ impl Eye {
         position: na::Point2<f32>,
         rotation: na::Rotation2<f32>,
         foods: &[Food],
+        animals: &[VisibleAnimal],
     ) -> Vec<f32> {
-        let mut cells = vec![0.0; self.cells];
+        let mut cells = vec![0.0; self.cells * 4];
 
         for food in foods {
             let vec = food.position - position;
@@ -39,11 +41,58 @@ impl Eye {
 
             let angle = angle + self.fov_angle / 2.0;
             let cell = angle / self.fov_angle * (self.cells as f32);
-            let cell = (cell as usize).min(cells.len() - 1);
+            let cell = (cell as usize).min(self.cells - 1);
+            let cell2 = cell + self.cells;
+            let cell3 = cell + self.cells * 2;
+            let cell4 = cell + self.cells * 3;
 
             let dist = (self.fov_range - dist) / self.fov_range;
-            if cells[cell] == 0.0 || dist < cells[cell] {
+            if (cells[cell] <= 0.0 || dist < cells[cell])
+                && (cells[cell2] <= 0.0 || dist < cells[cell2])
+            {
+                cells[cell2] = -1.0;
+                cells[cell3] = -1.0;
+                cells[cell4] = -1.0;
                 cells[cell] = dist;
+            }
+            if cells[cell] <= 0.0 || dist < cells[cell] {
+                cells[cell] = dist;
+            }
+        }
+
+        for animal in animals {
+            let vec = animal.0 - position;
+            let dist = vec.norm();
+
+            if dist > self.fov_range || dist < 0.0000001 {
+                continue;
+            }
+
+            let angle = na::Rotation2::rotation_between(&na::Vector2::y(), &vec).angle();
+            let angle = angle - rotation.angle();
+            let angle = na::wrap(angle, -PI, PI);
+
+            if angle < -self.fov_angle / 2.0 || angle > self.fov_angle / 2.0 {
+                continue;
+            }
+
+            let angle = angle + self.fov_angle / 2.0;
+            let cell = angle / self.fov_angle * (self.cells as f32);
+            let cell = (cell as usize).min(self.cells - 1);
+            let cell2 = cell + self.cells;
+            let cell3 = cell + self.cells * 2;
+            let cell4 = cell + self.cells * 3;
+
+            let dist = (self.fov_range - dist) / self.fov_range;
+            if (cells[cell] <= 0.0 || dist < cells[cell])
+                && (cells[cell2] <= 0.0 || dist < cells[cell2])
+            {
+                cells[cell] = -1.0;
+                cells[cell2] = dist;
+                let angle = rotation.angle_to(&animal.1);
+                let angle = na::wrap(angle, -PI, PI);
+                cells[cell3] = angle;
+                cells[cell4] = animal.2;
             }
         }
 

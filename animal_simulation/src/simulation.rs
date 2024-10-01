@@ -1,10 +1,11 @@
 use crate::config::Config;
 use crate::stats::Statistics;
-use crate::{Animal, Brain, World};
+use crate::{Animal, Brain, VisibleAnimal, World};
 use genetic_algorithm::{Population, RouletteWheelPopulation};
 use rand::rngs::OsRng;
 use rand::{Rng, RngCore};
 use std::cell::Cell;
+use std::f32::consts::PI;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
@@ -67,33 +68,68 @@ impl Simulation {
 
 impl Simulation {
     fn process_collisions(&mut self, rng: &mut dyn RngCore) {
+        let visible_animals: Vec<VisibleAnimal> =
+            self.world.animals.iter().map(Animal::visible).collect();
         for animal in &mut self.world.animals {
             for food in &mut self.world.foods {
                 let distance = nalgebra::distance(&animal.position, &food.position);
 
                 if distance <= self.config.food_size {
                     animal.satiation += 1;
-                    animal
-                        .brain
-                        .upgrade()
-                        .unwrap()
-                        .fitness
-                        .set(animal.satiation as f32);
+                    animal.brain.upgrade().unwrap().fitness.set(
+                        animal.satiation as f32 - animal.boosts as f32 * self.config.boost_cost,
+                    );
                     food.position = rng.gen();
+                }
+            }
+
+            for other_animal in &visible_animals {
+                let distance = nalgebra::distance(&animal.position, &other_animal.0);
+                let relative_angle = animal.rotation().angle_to(&other_animal.1);
+                if distance > 0.0000001
+                    && distance < self.config.animal_size
+                    && relative_angle > PI / 12f32
+                {
+                    let stunned = animal.stunned > 0;
+                    let boosting = animal.boosting;
+                    let other_stunned = other_animal.2 < 0.0000001;
+                    let other_boosting = other_animal.2 > self.config.sim_speed_max;
+
+                    if !other_stunned {
+                        if stunned {
+                            if animal.satiation >= 3 && other_boosting {
+                                animal.satiation -= 3;
+                            }
+                        } else {
+                            let mut stun_multiplier = 1u8;
+                            if boosting {
+                                //stun_multiplier += 1;
+                            }
+                            if other_boosting {
+                                stun_multiplier += 1;
+                            }
+                            animal.stun(self.config.stun_duration * stun_multiplier);
+                        }
+                    } else if !stunned && other_stunned && boosting && other_animal.3 >= 3 {
+                        animal.satiation += 3;
+                    }
                 }
             }
         }
     }
 
     fn process_brains(&mut self) {
+        let visible_animals: Vec<VisibleAnimal> =
+            self.world.animals.iter().map(Animal::visible).collect();
         for animal in &mut self.world.animals {
-            animal.process_brain(&self.config, &self.world.foods);
+            animal.process_brain(&self.config, &self.world.foods, &visible_animals, self.age);
         }
     }
 
     fn process_movements(&mut self) {
+        let config = &self.config;
         for animal in &mut self.world.animals {
-            animal.process_movement();
+            animal.process_movement(config);
         }
     }
 

@@ -24,6 +24,10 @@ impl Individual<Config> for Rc<Brain> {
     }
 
     fn mutate(self, params: &Config, rng: &mut dyn RngCore) -> Self {
+        if rng.gen_bool(params.ga_mut_chance as f64) {
+            return self;
+        }
+
         let mut layers = vec![];
         for l1 in &self.nn.layers {
             let weights: Vec<f32> = l1
@@ -89,15 +93,16 @@ impl Brain {
         Self::new(config, network)
     }
 
-    pub(crate) fn process(&self, vision: Array1<f32>) -> (f32, f32) {
-        let response = self.nn.forward(vision);
+    pub(crate) fn process(&self, inputs: Array1<f32>) -> (f32, f32, f32) {
+        let response = self.nn.forward(inputs);
 
         let r0 = response[0].clamp(0.0, 1.0) - 0.5;
         let r1 = response[1].clamp(0.0, 1.0) - 0.5;
         let speed = (r0 + r1).clamp(-self.speed_accel, self.speed_accel);
         let rotation = (r0 - r1).clamp(-self.rotation_accel, self.rotation_accel);
+        let boost = if response[2] > 0.0 { 1.0 } else { -1.0 };
 
-        (speed, rotation)
+        (speed, rotation, boost)
     }
 }
 
@@ -112,6 +117,6 @@ impl Brain {
     }
 
     fn topology(config: &Config) -> [usize; 3] {
-        [config.eye_cells, config.brain_neurons, 2]
+        [config.eye_cells * 4 + 1, config.brain_neurons, 3]
     }
 }

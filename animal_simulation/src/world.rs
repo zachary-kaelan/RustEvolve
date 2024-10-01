@@ -4,7 +4,7 @@ mod food;
 pub use food::*;
 
 use crate::config::Config;
-pub use crate::world::animal::Animal;
+pub use crate::world::animal::*;
 use crate::*;
 
 #[derive(Debug)]

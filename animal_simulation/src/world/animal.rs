@@ -3,6 +3,13 @@ use crate::*;
 use ndarray::Array1;
 use std::rc::{Rc, Weak};
 
+pub struct VisibleAnimal(
+    pub na::Point2<f32>,
+    pub na::Rotation2<f32>,
+    pub f32,
+    pub usize,
+);
+
 #[derive(Debug)]
 pub struct Animal {
     pub(crate) position: na::Point2<f32>,
@@ -12,6 +19,10 @@ pub struct Animal {
     pub(crate) eye: Eye,
     pub(crate) brain: Weak<Brain>,
     pub satiation: usize,
+    pub boosts: usize,
+    pub boosting: bool,
+    pub stunned: u8,
+    pub stunned_cooldown: u8,
 }
 
 impl Animal {
@@ -25,6 +36,10 @@ impl Animal {
 
     pub fn vision(&self) -> &[f32] {
         &self.vision
+    }
+
+    pub fn visible(&self) -> VisibleAnimal {
+        VisibleAnimal(self.position, self.rotation, self.speed, self.satiation)
     }
 }
 
@@ -43,23 +58,71 @@ impl Animal {
         Weak::clone(&self.brain)
     }
 
-    pub(crate) fn process_brain(&mut self, config: &Config, foods: &[Food]) {
-        self.vision = self.eye.process_vision(self.position, self.rotation, foods);
+    pub(crate) fn process_brain(
+        &mut self,
+        config: &Config,
+        foods: &[Food],
+        animals: &[VisibleAnimal],
+        age: usize,
+    ) {
+        if self.stunned > 0 {
+            return;
+        }
 
-        let (speed, rotation) = self
+        self.vision = self
+            .eye
+            .process_vision(self.position, self.rotation, foods, animals);
+
+        let mut inputs = self.vision.clone();
+        inputs.push(self.satiation as f32);
+        //inputs.push(age as f32 / config.sim_generation_length as f32);
+
+        let (speed, rotation, boost) = self
             .brain
             .upgrade()
             .unwrap()
-            .process(Array1::from_vec(self.vision.clone()));
+            .process(Array1::from_vec(inputs));
 
-        self.speed = (self.speed + speed).clamp(config.sim_speed_min, config.sim_speed_max);
+        self.speed = if boost <= 0.0 {
+            (self.speed + speed).clamp(config.sim_speed_min, config.sim_speed_max)
+        } else {
+            config.sim_speed_max * 2.0
+        };
         self.rotation = na::Rotation2::new(self.rotation.angle() + rotation);
+
+        if boost > 0.0 {
+            self.boosts += 1;
+            self.boosting = true;
+        } else {
+            self.boosting = false;
+        }
     }
 
-    pub(crate) fn process_movement(&mut self) {
-        self.position += self.rotation * na::Vector2::new(0.0, self.speed);
-        self.position.x = na::wrap(self.position.x, 0.0, 1.0);
-        self.position.y = na::wrap(self.position.y, 0.0, 1.0);
+    pub(crate) fn process_movement(&mut self, config: &Config) {
+        if self.stunned == 0 {
+            self.position += self.rotation * na::Vector2::new(0.0, self.speed);
+            self.position.x = na::wrap(self.position.x, 0.0, 1.0);
+            self.position.y = na::wrap(self.position.y, 0.0, 1.0);
+            if self.stunned_cooldown > 0 {
+                self.stunned_cooldown -= 1;
+            }
+        } else {
+            self.stunned -= 1;
+            if self.stunned == 0 {
+                self.stunned_cooldown = config.stun_cooldown;
+            }
+        }
+    }
+
+    pub(crate) fn stun(&mut self, duration: u8) {
+        if self.stunned == 0 && self.stunned_cooldown == 0 {
+            self.stunned = duration;
+            self.boosting = false;
+            self.speed = 0.0;
+            if self.satiation > 0 {
+                //self.satiation -= 1;
+            }
+        }
     }
 }
 
@@ -73,6 +136,10 @@ impl Animal {
             eye: Eye::new(config),
             brain: Rc::downgrade(&Rc::clone(brain)),
             satiation: 0,
+            boosts: 0,
+            boosting: false,
+            stunned: 0,
+            stunned_cooldown: 0,
         }
     }
 }

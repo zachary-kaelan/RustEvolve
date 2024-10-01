@@ -56,12 +56,27 @@ async fn main() {
         }
 
         for animal in simulation.world().animals() {
+            let mut r = 64u8;
+            let mut g = 0u8;
+            let mut b = 64u8;
+
+            if animal.stunned > 0 {
+                r = 0;
+                g = 0;
+                b = 0;
+            } else {
+                if animal.boosting {
+                    r = 128;
+                }
+                g = (animal.satiation * 8).min(255usize) as u8;
+            }
+
             draw_triangle_rotated(
                 animal.position().x * screen_width(),
                 animal.position().y * screen_width(),
                 config.food_size * screen_width(),
                 animal.rotation().angle(),
-                Color::from_rgba(64, (animal.satiation * 8).min(255usize) as u8, 64, 255),
+                Color::from_rgba(r, g, b, 255),
             );
 
             let angle_per_cell = config.eye_fov_angle / (config.eye_cells as f32);
@@ -77,7 +92,7 @@ async fn main() {
                 draw_arc(
                     animal.position().x * screen_width(),
                     animal.position().y * screen_width(),
-                    1,
+                    5,
                     config.food_size * 2.5 * screen_width(),
                     angle_from,
                     1.0,
