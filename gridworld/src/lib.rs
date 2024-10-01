@@ -1,6 +1,7 @@
 mod consts;
 mod grid;
 mod grid_math;
+mod world;
 
 pub use grid::*;
 pub use grid_math::*;
