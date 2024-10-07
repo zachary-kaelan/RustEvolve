@@ -1,28 +1,33 @@
 use crate::consts::brain_io::*;
+use crate::consts::energy::CREATURE_START_ENERGY;
 use crate::consts::senses::*;
 use crate::consts::world::GRID_WIDTH;
 use crate::world::World;
 use crate::*;
+use std::cell::Cell;
 use std::f32::consts::PI;
+use std::rc::{Rc, Weak};
 
-pub struct Creature {
-    pub memory: Box<[f32; CREATURE_MEMORY_SIZE]>,
+pub struct Creature<T> {
+    pub memory: Cell<[f32; CREATURE_MEMORY_SIZE]>,
     pub energy: u32,
     pub pos: GridPoint,
+    pub brain: T,
 }
 
-impl Default for Creature {
-    fn default() -> Self {
+impl<T> Creature<T> {
+    pub fn new(pos: GridPoint, brain: T) -> Self {
         Self {
-            memory: Box::new([0.0; CREATURE_MEMORY_SIZE]),
-            energy: consts::energy::CREATURE_START_ENERGY,
-            pos: GridPoint::new(GRID_WIDTH / 2, GRID_WIDTH / 2),
+            memory: Cell::new([0.0; CREATURE_MEMORY_SIZE]),
+            energy: CREATURE_START_ENERGY,
+            pos,
+            brain,
         }
     }
 }
 
-impl Creature {
-    pub fn form_brain_inputs(&self, world: &World) -> [f32; INPUTS_SIZE] {
+impl<T> Creature<T> {
+    pub fn form_brain_inputs(&self, world: &World<T>) -> [f32; INPUTS_SIZE] {
         let mut inputs = [0.0f32; INPUTS_SIZE];
         let mut ptr = 0usize;
         inputs[ptr + world[self.pos] as usize] = 1.0f32;
@@ -54,9 +59,15 @@ impl Creature {
         ptr += SLOTS_PER_EYE_CELL * EYE_CELLS_TOTAL as usize;
 
         for i in 0..CREATURE_MEMORY_SIZE {
-            inputs[ptr + i] = self.memory[i];
+            inputs[ptr + i] = self.memory.get()[i];
         }
 
         inputs
+    }
+}
+
+impl<T> HasPos for Creature<T> {
+    fn get_pos(&self) -> GridPoint {
+        self.pos
     }
 }

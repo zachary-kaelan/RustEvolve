@@ -1,4 +1,5 @@
 use crate::consts::senses::EYE_RANGE;
+use crate::consts::world::GRID_WIDTH;
 use crate::*;
 use std::f32::consts::PI;
 use std::ops::Index;
@@ -17,7 +18,7 @@ impl AngleLU {
             for y in 0..EYE_RANGE {
                 let pt = pt!(x, y);
                 let angle = mid.angle_to(pt);
-                cache[(pt.x * 256) as usize + pt.y as usize] =
+                cache[(pt.x * GRID_WIDTH) as usize + pt.y as usize] =
                     if angle < 0.0 { 2.0 * PI - angle } else { angle };
             }
         }
@@ -30,7 +31,7 @@ impl AngleLU {
             EYE_RANGE / 2 + other.y - pos.y
         );
 
-        self.cache[(eff_pt.x * 256) as usize + eff_pt.y as usize]
+        self.cache[(eff_pt.x * GRID_WIDTH) as usize + eff_pt.y as usize]
     }
 }
 

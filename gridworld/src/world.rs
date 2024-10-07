@@ -1,23 +1,24 @@
 use crate::*;
 use consts::world::*;
+use rand::{Rng, RngCore};
 use std::cmp::PartialEq;
 use std::ops::Index;
 
-pub struct World {
+pub struct World<T> {
     map: [Tiles; GRID_AREA],
-    creatures: Vec<Creature>,
+    pub creatures: Vec<Creature<T>>,
 }
 
-impl Index<GridPoint> for World {
+impl<T> Index<GridPoint> for World<T> {
     type Output = Tiles;
 
     fn index(&self, index: GridPoint) -> &Self::Output {
-        &self.map[(index.x * 256) as usize + index.y as usize]
+        &self.map[(index.x * GRID_WIDTH) as usize + index.y as usize]
     }
 }
 
 // initialization functions
-impl World {
+impl<T> World<T> {
     pub fn new(map: [Tiles; GRID_AREA]) -> Self {
         Self {
             map,
@@ -47,11 +48,27 @@ impl World {
             self.set(pt!(GRID_WIDTH - 1, y), tile);
         }
     }
+
+    pub fn get_random_free_pt(&self, rng: &mut dyn RngCore) -> GridPoint {
+        loop {
+            let pt = GridPoint::rand(rng);
+            if self[pt] == Tiles::Floor && !self.creatures.iter().any(|x| x.pos == pt) {
+                break pt;
+            }
+        }
+    }
+
+    pub fn place_random_food(&mut self, amount: usize, rng: &mut dyn RngCore) {
+        for _ in 0..amount {
+            let pt = self.get_random_free_pt(rng);
+            self.set(pt, Tiles::EnergyGain);
+        }
+    }
 }
 
-impl World {
+impl<T> World<T> {
     fn set(&mut self, pt: GridPoint, tile: Tiles) {
-        self.map[(pt.x * 256) as usize + pt.y as usize] = tile;
+        self.map[(pt.x * GRID_WIDTH) as usize + pt.y as usize] = tile;
     }
 
     pub fn get_creatures_in_range(&self, pos: GridPoint, max_range: u16) -> Vec<GridPoint> {

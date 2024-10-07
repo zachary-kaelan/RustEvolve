@@ -1,7 +1,8 @@
 use crate::consts::world::GRID_WIDTH;
 use crate::*;
+use rand::{Rng, RngCore};
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct GridPoint {
     pub x: u16,
     pub y: u16,
@@ -10,6 +11,13 @@ pub struct GridPoint {
 impl GridPoint {
     pub fn new(x: u16, y: u16) -> Self {
         Self { x, y }
+    }
+
+    pub fn rand(rng: &mut dyn RngCore) -> Self {
+        Self {
+            x: rng.gen_range(0..GRID_WIDTH),
+            y: rng.gen_range(0..GRID_WIDTH),
+        }
     }
 
     /// Chessboard distance to the other `GridPoint`.
@@ -24,11 +32,51 @@ impl GridPoint {
     }
 }
 
+impl From<usize> for GridPoint {
+    fn from(value: usize) -> Self {
+        let y = value % GRID_WIDTH as usize;
+        let x = (value - y) / GRID_WIDTH as usize;
+        GridPoint::new(x as u16, y as u16)
+    }
+}
+
 #[macro_export]
 macro_rules! pt {
     ( $x:expr,$y:expr ) => {
         GridPoint { x: $x, y: $y }
     };
+}
+
+impl GridPoint {
+    pub const fn move_dir(&self, dir: Direction) -> Self {
+        // Clamp?
+        match dir {
+            Direction::Up => {
+                pt![self.x, self.y - 1]
+            }
+            Direction::UpRight => {
+                pt![self.x + 1, self.y - 1]
+            }
+            Direction::Right => {
+                pt![self.x + 1, self.y]
+            }
+            Direction::DownRight => {
+                pt![self.x + 1, self.y + 1]
+            }
+            Direction::Down => {
+                pt![self.x, self.y + 1]
+            }
+            Direction::DownLeft => {
+                pt![self.x - 1, self.y + 1]
+            }
+            Direction::Left => {
+                pt![self.x - 1, self.y]
+            }
+            Direction::UpLeft => {
+                pt![self.x - 1, self.y - 1]
+            }
+        }
+    }
 }
 
 pub fn get_points_in_range(pos: GridPoint, max_range: u16) -> Vec<GridPoint> {
@@ -73,7 +121,7 @@ mod tests {
         for x in 0..GRID_WIDTH {
             for y in 0..GRID_WIDTH {
                 let angle = middle.angle_to(pt!(x, y));
-                lu[(x * 256 + y) as usize] = angle;
+                lu[(x * GRID_WIDTH + y) as usize] = angle;
             }
         }
 
@@ -82,7 +130,7 @@ mod tests {
         b.iter(|| {
             for x in 0..GRID_WIDTH {
                 for y in 0..GRID_WIDTH {
-                    let angle = lu[(x * 256 + y) as usize];
+                    let angle = lu[(x * GRID_WIDTH + y) as usize];
                 }
             }
         })
