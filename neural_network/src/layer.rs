@@ -1,9 +1,9 @@
 use crate::*;
-use ndarray::{Array, Array2, ShapeBuilder};
+use ndarray::{Array, Array1, Array2, ShapeBuilder};
 use std::cmp::max;
 use std::ops::Add;
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum LayerType {
     Input,
     Calc,
@@ -12,13 +12,13 @@ pub enum LayerType {
 
 #[derive(Clone, Debug)]
 pub struct Layer {
-    pub(crate) layer_type: LayerType,
-    pub(crate) weights: Array2<f32>,
-    pub(crate) biases: Array2<f32>,
+    pub layer_type: LayerType,
+    pub weights: Array2<f32>,
+    pub biases: Array1<f32>,
 }
 
 impl Layer {
-    pub fn new(layer_type: LayerType, weights: Array2<f32>, biases: Array2<f32>) -> Self {
+    pub fn new(layer_type: LayerType, weights: Array2<f32>, biases: Array1<f32>) -> Self {
         Self {
             layer_type,
             weights,
@@ -34,7 +34,7 @@ impl Layer {
     ) -> Self {
         let weights =
             Array2::from_shape_simple_fn((input_size, output_size), || rng.gen_range(-1.0..=1.0));
-        let biases = Array2::from_shape_simple_fn((1, output_size), || rng.gen_range(-1.0..=1.0));
+        let biases = Array1::from_shape_simple_fn(output_size, || rng.gen_range(-1.0..=1.0));
         Self {
             layer_type,
             weights,
@@ -42,7 +42,7 @@ impl Layer {
         }
     }
 
-    pub fn forward(&self, inputs: Array2<f32>) -> Array2<f32> {
+    pub fn forward(&self, inputs: Array1<f32>) -> Array1<f32> {
         inputs
             .dot(&self.weights)
             .add(&self.biases)
