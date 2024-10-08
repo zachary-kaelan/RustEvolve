@@ -71,14 +71,67 @@ impl Simulation {
 impl Simulation {
     fn process_collisions(&self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) {
         let mut target_points: HashSet<GridPoint> = HashSet::new();
-        for (_, new_pos) in actions {
-            target_points.insert(new_pos);
+        for (_, new_pos) in &actions {
+            target_points.insert(*new_pos);
         }
         for target_point in target_points {
             let mut creatures = vec![];
-            for (creature, new_pos) in actions {
-                if new_pos == target_point {
-                    creatures.push(creature);
+            for (creature, new_pos) in &actions {
+                if *new_pos == target_point {
+                    creatures.push(*creature);
+                }
+            }
+
+            let tile = self.world[target_point];
+
+            if creatures.len() > 1 {
+                for creature in &creatures {
+                    let brain_ref = creature.brain.upgrade().unwrap();
+                    brain_ref.add_fitness(-BUMP_ENERGY_LOSS);
+                }
+                match tile {
+                    Tiles::EnergyGain => {
+                        let energy_per_creature =
+                            gridworld::FOOD_ENERGY_GAIN / (creatures.len() + 1) as f32;
+                        for creature in &creatures {
+                            let brain_ref = creature.brain.upgrade().unwrap();
+                            brain_ref.add_fitness(energy_per_creature);
+                        }
+                    }
+                    Tiles::EnergyLoss => {
+                        let energy_per_creature =
+                            gridworld::HAZARD_ENERGY_LOSS / (creatures.len() + 1) as f32;
+                        for creature in &creatures {
+                            let brain_ref = creature.brain.upgrade().unwrap();
+                            brain_ref.add_fitness(-energy_per_creature);
+                        }
+                    }
+                    Tiles::Wall => {
+                        for creature in &creatures {
+                            let brain_ref = creature.brain.upgrade().unwrap();
+                            brain_ref.add_fitness(-WALL_ENERGY_LOSS);
+                        }
+                    }
+                    Tiles::Floor => {}
+                }
+            } else {
+                let mut creature = creatures[0];
+                let brain_ref = creature.brain.upgrade().unwrap();
+                match tile {
+                    Tiles::EnergyGain => {
+                        brain_ref.add_fitness(FOOD_ENERGY_GAIN);
+                        creature.set_pos(target_point);
+                    }
+                    Tiles::EnergyLoss => {
+                        brain_ref.add_fitness(-HAZARD_ENERGY_LOSS);
+                        creature.set_pos(target_point);
+                    }
+                    Tiles::Wall => {
+                        brain_ref.add_fitness(-WALL_ENERGY_LOSS);
+                    }
+                    Tiles::Floor => {
+                        creature.set_pos(target_point);
+                    }
                 }
             }
         }

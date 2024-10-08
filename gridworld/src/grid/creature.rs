@@ -10,7 +10,7 @@ use std::rc::{Rc, Weak};
 
 pub struct Creature<T> {
     pub memory: Cell<[f32; CREATURE_MEMORY_SIZE]>,
-    pub energy: u32,
+    pub energy: f32,
     pub pos: GridPoint,
     pub brain: T,
 }
@@ -63,6 +63,10 @@ impl<T> Creature<T> {
         }
 
         inputs
+    }
+
+    pub fn set_pos(&mut self, new_pos: GridPoint) {
+        self.pos = new_pos;
     }
 }
 

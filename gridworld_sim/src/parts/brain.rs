@@ -85,6 +85,10 @@ impl Individual<Config> for Rc<Brain> {
 }
 
 impl Brain {
+    pub(crate) fn add_fitness(&self, amount: f32) {
+        self.fitness.set(self.fitness.get() + amount);
+    }
+
     pub(crate) fn from_network(config: &Config, network: Network) -> Self {
         Self::new(config, network)
     }
