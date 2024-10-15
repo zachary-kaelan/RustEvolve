@@ -28,7 +28,7 @@ impl GridPoint {
 
     /// The position of `other` on the circle around this point
     pub fn angle_to(&self, other: Self) -> f32 {
-        ((other.y - self.y) as f32).atan2((other.x - self.x) as f32)
+        (other.y as f32 - self.y as f32).atan2(other.x as f32 - self.x as f32)
     }
 }
 

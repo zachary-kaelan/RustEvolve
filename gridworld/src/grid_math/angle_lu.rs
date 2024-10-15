@@ -7,18 +7,18 @@ use std::ops::Index;
 static LU: std::sync::LazyLock<AngleLU> = std::sync::LazyLock::new(AngleLU::new);
 
 struct AngleLU {
-    cache: [f32; (EYE_RANGE * EYE_RANGE) as usize],
+    cache: [f32; (EYE_RANGE * EYE_RANGE * 4) as usize],
 }
 
 impl AngleLU {
     fn new() -> Self {
-        let mut cache = [0f32; (EYE_RANGE * EYE_RANGE) as usize];
-        let mid = pt!(EYE_RANGE / 2, EYE_RANGE / 2);
-        for x in 0..EYE_RANGE {
-            for y in 0..EYE_RANGE {
+        let mut cache = [0f32; (EYE_RANGE * EYE_RANGE * 4) as usize];
+        let mid = pt!(EYE_RANGE, EYE_RANGE);
+        for x in 0..(EYE_RANGE * 2) {
+            for y in 0..(EYE_RANGE * 2) {
                 let pt = pt!(x, y);
                 let angle = mid.angle_to(pt);
-                cache[(pt.x * GRID_WIDTH) as usize + pt.y as usize] =
+                cache[(pt.x * EYE_RANGE * 2) as usize + pt.y as usize] =
                     if angle < 0.0 { 2.0 * PI - angle } else { angle };
             }
         }
@@ -26,12 +26,8 @@ impl AngleLU {
     }
 
     fn at(&self, pos: GridPoint, other: GridPoint) -> f32 {
-        let eff_pt = pt!(
-            EYE_RANGE / 2 + other.x - pos.x,
-            EYE_RANGE / 2 + other.y - pos.y
-        );
-
-        self.cache[(eff_pt.x * GRID_WIDTH) as usize + eff_pt.y as usize]
+        let eff_pt = pt!(EYE_RANGE + other.x - pos.x, EYE_RANGE + other.y - pos.y);
+        self.cache[(eff_pt.x * EYE_RANGE) as usize + eff_pt.y as usize]
     }
 }
 
