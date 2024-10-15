@@ -37,7 +37,7 @@ impl<T> Creature<T> {
         let creatures_in_range = world.get_creatures_in_range(self.pos.get(), EYE_RANGE);
 
         for pt in pts_in_range {
-            let angle_diff = get_angle(self.pos.get(), pt);
+            let angle_diff = get_angle(self.pos.get(), pt) % (2.0 * PI);
             let cell_index = ((angle_diff / (2.0 * PI)) * EYE_CELLS_TOTAL as f32).floor() as usize;
             let tile = world[pt];
             let slot_ptr = ptr + (cell_index * SLOTS_PER_EYE_CELL);
@@ -48,7 +48,7 @@ impl<T> Creature<T> {
         }
 
         for creature_pos in creatures_in_range {
-            let angle_diff = get_angle(self.pos.get(), creature_pos);
+            let angle_diff = get_angle(self.pos.get(), creature_pos) % (2.0 * PI);
             let cell_index = ((angle_diff / (2.0 * PI)) * EYE_CELLS_TOTAL as f32).floor() as usize;
             let slot_ptr = ptr + (cell_index * SLOTS_PER_EYE_CELL) + NUM_TILES * 2;
 
