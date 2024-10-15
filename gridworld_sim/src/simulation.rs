@@ -20,20 +20,13 @@ pub struct Simulation {
 impl Simulation {
     pub fn random(config: &Config) -> Self {
         let rng = &mut OsRng;
-        let mut world: World<Weak<Brain>> = World::default();
-        world.set_border(Tiles::Wall);
-        world.place_random_food(config.world_foods, rng);
 
         let population = Box::new(RouletteWheelPopulation::random(
             config.world_creatures,
             config,
             rng,
         ));
-        for individual in &population.population {
-            let pos = world.get_random_free_pt(rng);
-            let creature = Creature::new(pos, Rc::downgrade(individual));
-            world.creatures.push(creature);
-        }
+        let world = Simulation::init_world(config, &population.population, rng);
         Self {
             config: config.clone(),
             world,
@@ -41,6 +34,19 @@ impl Simulation {
             age: 0,
             generation: 0,
             rng: *rng,
+        }
+    }
+
+    fn init_world(config: &Config, population: &[Rc<Brain>], rng: &mut dyn RngCore) -> World<Weak<Brain>> {
+        let mut world: World<Weak<Brain>> = World::default();
+        
+        world.set_border(Tiles::Wall);
+        world.place_random_food(config.world_foods, rng);
+
+        for individual in population {
+            let pos = world.get_random_free_pt(rng);
+            let creature = Creature::new(pos, Rc::downgrade(individual));
+            world.creatures.push(creature);
         }
     }
 
@@ -53,9 +59,9 @@ impl Simulation {
     }
 
     pub fn step(&mut self, rng: &mut dyn RngCore) -> Option<Statistics> {
-        self.process_collisions(rng);
-        self.process_brains();
-        self.process_movements();
+        let actions = self.process_brains();
+        let valid_actions = self.process_collisions(actions);
+        self.process_movements(valid_actions);
         self.try_evolving(rng)
     }
 
@@ -69,7 +75,14 @@ impl Simulation {
 }
 
 impl Simulation {
-    fn process_collisions(&self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) {
+    fn process_movements(&mut self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) {
+        for (creature, action) in actions {
+            creature.set_pos(action);
+        }
+    }
+    
+    fn process_collisions(&self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) -> Vec<(&Creature<Weak<Brain>>, GridPoint)> {
+        let mut valid_actions = vec![];
         let mut target_points: HashSet<GridPoint> = HashSet::new();
         for (_, new_pos) in &actions {
             target_points.insert(*new_pos);
@@ -120,17 +133,17 @@ impl Simulation {
                 match tile {
                     Tiles::EnergyGain => {
                         brain_ref.add_fitness(FOOD_ENERGY_GAIN);
-                        creature.set_pos(target_point);
+                        valid_actions.push((creature, target_point));
                     }
                     Tiles::EnergyLoss => {
                         brain_ref.add_fitness(-HAZARD_ENERGY_LOSS);
-                        creature.set_pos(target_point);
+                        valid_actions.push((creature, target_point));
                     }
                     Tiles::Wall => {
                         brain_ref.add_fitness(-WALL_ENERGY_LOSS);
                     }
                     Tiles::Floor => {
-                        creature.set_pos(target_point);
+                        valid_actions.push((creature, target_point));
                     }
                 }
             }
@@ -154,5 +167,32 @@ impl Simulation {
         }
 
         actions
+    }
+}
+
+impl Simulation {
+
+    fn try_evolving(&mut self, rng: &mut dyn RngCore) -> Option<Statistics> {
+        self.age += 1;
+
+        if self.age > self.config.sim_generation_length {
+            Some(self.evolve(rng))
+        } else {
+            None
+        }
+    }
+
+    fn evolve(&mut self, rng: &mut dyn RngCore) -> Statistics {
+        self.age = 0;
+        self.generation += 1;
+
+        let (individuals, statistics) = self.population.evolve(self.config(), rng);
+        self.population = individuals;
+        self.world = Simulation::init_world(&self.config, &self.population.population, rng);
+
+        Statistics {
+            generation: self.generation - 1,
+            ga: statistics,
+        }
     }
 }
