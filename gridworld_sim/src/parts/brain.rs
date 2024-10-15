@@ -123,7 +123,6 @@ impl Brain {
 impl Brain {
     fn new(config: &Config, nn: Network) -> Self {
         Self {
-            move_dir: None,
             nn,
             fitness: Cell::new(0.0),
         }

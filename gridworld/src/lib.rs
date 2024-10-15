@@ -1,7 +1,6 @@
 #![feature(test)]
 
 mod consts;
-mod creature_brain;
 mod grid;
 mod grid_math;
 mod world;

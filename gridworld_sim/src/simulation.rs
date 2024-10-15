@@ -1,11 +1,10 @@
 use crate::stats::Statistics;
 pub use crate::*;
-use ndarray::Array1;
-use rand::rngs::OsRng;
-use rand::{random, RngCore};
-use std::async_iter::from_iter;
+use ::rand::rngs::OsRng;
+use ::rand::RngCore;
+use ndarray::{arr1, Array1};
 use std::collections::HashSet;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
 pub struct Simulation {
@@ -37,9 +36,13 @@ impl Simulation {
         }
     }
 
-    fn init_world(config: &Config, population: &[Rc<Brain>], rng: &mut dyn RngCore) -> World<Weak<Brain>> {
+    fn init_world(
+        config: &Config,
+        population: &[Rc<Brain>],
+        rng: &mut dyn RngCore,
+    ) -> World<Weak<Brain>> {
         let mut world: World<Weak<Brain>> = World::default();
-        
+
         world.set_border(Tiles::Wall);
         world.place_random_food(config.world_foods, rng);
 
@@ -48,6 +51,8 @@ impl Simulation {
             let creature = Creature::new(pos, Rc::downgrade(individual));
             world.creatures.push(creature);
         }
+
+        world
     }
 
     pub fn config(&self) -> &Config {
@@ -75,13 +80,16 @@ impl Simulation {
 }
 
 impl Simulation {
-    fn process_movements(&mut self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) {
+    fn process_movements(&self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) {
         for (creature, action) in actions {
-            creature.set_pos(action);
+            creature.pos.set(action);
         }
     }
-    
-    fn process_collisions(&self, actions: Vec<(&Creature<Weak<Brain>>, GridPoint)>) -> Vec<(&Creature<Weak<Brain>>, GridPoint)> {
+
+    fn process_collisions<'a>(
+        &self,
+        actions: Vec<(&'a Creature<Weak<Brain>>, GridPoint)>,
+    ) -> Vec<(&'a Creature<Weak<Brain>>, GridPoint)> {
         let mut valid_actions = vec![];
         let mut target_points: HashSet<GridPoint> = HashSet::new();
         for (_, new_pos) in &actions {
@@ -128,7 +136,7 @@ impl Simulation {
                     Tiles::Floor => {}
                 }
             } else {
-                let mut creature = creatures[0];
+                let creature = creatures[0];
                 let brain_ref = creature.brain.upgrade().unwrap();
                 match tile {
                     Tiles::EnergyGain => {
@@ -148,22 +156,27 @@ impl Simulation {
                 }
             }
         }
+
+        valid_actions
     }
 
     fn process_brains(&self) -> Vec<(&Creature<Weak<Brain>>, GridPoint)> {
         let mut actions = vec![];
         for creature in &self.world.creatures {
             let inputs = creature.form_brain_inputs(&self.world);
-            let brain = creature.brain.upgrade().unwrap().deref();
-            let (direction, new_memory) = brain.process(Array1::from(inputs));
+            if let Some(brain) = creature.brain.upgrade() {
+                let (direction, new_memory) = brain.process(arr1(&inputs));
 
-            if let Some(direction) = direction {
-                actions.push((creature, creature.pos.move_dir(direction)));
+                if let Some(direction) = direction {
+                    actions.push((creature, creature.pos.get().move_dir(direction)));
+                } else {
+                    actions.push((creature, creature.pos.get()));
+                }
+
+                creature.memory.set(new_memory);
             } else {
-                actions.push((creature, creature.pos));
+                panic!("NO BRAIN")
             }
-
-            creature.memory.set(new_memory);
         }
 
         actions
@@ -171,7 +184,6 @@ impl Simulation {
 }
 
 impl Simulation {
-
     fn try_evolving(&mut self, rng: &mut dyn RngCore) -> Option<Statistics> {
         self.age += 1;
 

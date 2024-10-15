@@ -52,7 +52,7 @@ impl<T> World<T> {
     pub fn get_random_free_pt(&self, rng: &mut dyn RngCore) -> GridPoint {
         loop {
             let pt = GridPoint::rand(rng);
-            if self[pt] == Tiles::Floor && !self.creatures.iter().any(|x| x.pos == pt) {
+            if self[pt] == Tiles::Floor && !self.creatures.iter().any(|x| x.pos.get() == pt) {
                 break pt;
             }
         }
@@ -74,9 +74,9 @@ impl<T> World<T> {
     pub fn get_creatures_in_range(&self, pos: GridPoint, max_range: u16) -> Vec<GridPoint> {
         let mut points = vec![];
         for creature in &self.creatures {
-            let dist = pos.dist(creature.pos);
+            let dist = pos.dist(creature.pos.get());
             if 0 < dist && dist <= max_range {
-                points.push(creature.pos);
+                points.push(creature.pos.get());
             }
         }
         points
