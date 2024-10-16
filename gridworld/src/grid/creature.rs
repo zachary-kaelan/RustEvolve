@@ -51,6 +51,8 @@ impl<T> Creature<T> {
 
             inputs[slot_1] = (1.0 / self.pos.get().dist(pt) as f32).max(inputs[slot_1]);
             inputs[slot_ptr + NUM_TILES + ((tile as u8) as usize)] += 1.0;
+            let dist_metric = 1.0 / self.pos.get().dist(pt) as f32;
+            inputs[slot_1] = dist_metric.max(inputs[slot_1]);
         }
 
         for creature_pos in creatures_in_range {
@@ -61,6 +63,8 @@ impl<T> Creature<T> {
             inputs[slot_ptr] =
                 (1.0 / self.pos.get().dist(creature_pos) as f32).max(inputs[slot_ptr]);
             inputs[slot_ptr + 1] += 1.0;
+            let dist_metric = 1.0 / self.pos.get().dist(creature_pos) as f32;
+            inputs[slot_ptr] = dist_metric.max(inputs[slot_ptr]);
         }
 
         if CREATURE_MEMORY_SIZE > 0 {
