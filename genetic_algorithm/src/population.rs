@@ -19,6 +19,7 @@ where
     fn get_population(&self) -> &Vec<I>;
 
     fn evolve(&self, params: &C, rng: &mut dyn RngCore) -> (Box<Self>, PopulationStatistics) {
+        let mut max_similarity = 0.0f32;
         let new_population: Vec<I> = (0..self.size())
             .map(|_| {
                 let parent_a = self.select(params, rng);
@@ -29,7 +30,8 @@ where
                     .mutate(params, rng)
             })
             .collect();
-        let stats = PopulationStatistics::new(self.get_population());
+
+        let stats = PopulationStatistics::new(self.get_population(), max_similarity);
 
         (Self::new(new_population, self.get_config()), stats)
     }

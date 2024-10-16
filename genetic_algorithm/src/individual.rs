@@ -5,4 +5,5 @@ pub trait Individual<C> {
     fn fitness(&self) -> f32;
     fn mutate(self, params: &C, rng: &mut dyn RngCore) -> Self;
     fn crossover(&self, other: &Self, params: &C, rng: &mut dyn RngCore) -> Self;
+    fn similarity(&self, other: &Self) -> f32;
 }

@@ -83,6 +83,32 @@ impl Individual<Config> for Rc<Brain> {
         let nn = Network::new(layers);
         Rc::new(Brain::new(params, nn))
     }
+
+    fn similarity(&self, other: &Self) -> f32 {
+        let mut diffs_sum: f32 = 0.0;
+        for (l1, l2) in self.nn.layers.iter().zip(&other.nn.layers) {
+            let weights_diffs: Vec<f32> = l1
+                .weights
+                .iter()
+                .zip(l2.weights.iter())
+                .map(|(x1, x2)| (*x1 - *x2).abs())
+                .collect();
+
+            let bias_diffs: Vec<f32> = l1
+                .biases
+                .iter()
+                .zip(l2.biases.iter())
+                .map(|(x1, x2)| (*x1 - *x2).abs())
+                .collect();
+
+            let weights_diffs_sum: f32 = weights_diffs.iter().sum();
+            let bias_diffs_sum: f32 = bias_diffs.iter().sum();
+            diffs_sum += weights_diffs_sum;
+            diffs_sum += bias_diffs_sum;
+        }
+
+        1.0 / diffs_sum.max(0.0000001)
+    }
 }
 
 impl Brain {

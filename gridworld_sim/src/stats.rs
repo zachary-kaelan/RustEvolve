@@ -12,11 +12,12 @@ impl fmt::Display for Statistics {
         writeln!(f, "generation {}:", self.generation)?;
         write!(
             f,
-            "min[{:.2}] max[{:.2}] avg[{:.2}] median[{:.2}]",
+            "min[{:.2}] max[{:.2}] avg[{:.2}] median[{:.2}] similarity[{:.4}]",
             self.ga.min_fitness(),
             self.ga.max_fitness(),
             self.ga.avg_fitness(),
-            self.ga.median_fitness()
+            self.ga.median_fitness(),
+            self.ga.max_similarity()
         )
     }
 }

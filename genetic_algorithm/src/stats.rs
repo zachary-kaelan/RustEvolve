@@ -7,10 +7,11 @@ pub struct PopulationStatistics {
     max_fitness: f32,
     avg_fitness: f32,
     median_fitness: f32,
+    max_similarity: f32,
 }
 
 impl PopulationStatistics {
-    pub(crate) fn new<I, C>(population: &[I]) -> Self
+    pub(crate) fn new<I, C>(population: &[I], max_similarity: f32) -> Self
     where
         I: Individual<C>,
     {
@@ -39,6 +40,7 @@ impl PopulationStatistics {
             max_fitness,
             avg_fitness,
             median_fitness,
+            max_similarity,
         }
     }
 
@@ -56,5 +58,9 @@ impl PopulationStatistics {
 
     pub fn median_fitness(&self) -> f32 {
         self.median_fitness
+    }
+
+    pub fn max_similarity(&self) -> f32 {
+        self.max_similarity
     }
 }
