@@ -58,16 +58,16 @@ impl<T> World<T> {
         }
     }
 
-    pub fn place_random_food(&mut self, amount: usize, rng: &mut dyn RngCore) {
+    pub fn spread_random_tile(&mut self, tile: Tiles, amount: usize, rng: &mut dyn RngCore) {
         for _ in 0..amount {
             let pt = self.get_random_free_pt(rng);
-            self.set(pt, Tiles::EnergyGain);
+            self.set(pt, tile);
         }
     }
 }
 
 impl<T> World<T> {
-    fn set(&mut self, pt: GridPoint, tile: Tiles) {
+    pub fn set(&mut self, pt: GridPoint, tile: Tiles) {
         self.map[(pt.x * GRID_WIDTH) as usize + pt.y as usize] = tile;
     }
 

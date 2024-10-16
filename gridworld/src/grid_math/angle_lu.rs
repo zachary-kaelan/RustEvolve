@@ -18,8 +18,7 @@ impl AngleLU {
             for y in 0..(EYE_RANGE * 2) {
                 let pt = pt!(x, y);
                 let angle = mid.angle_to(pt);
-                cache[(pt.x * EYE_RANGE * 2) as usize + pt.y as usize] =
-                    if angle < 0.0 { 2.0 * PI - angle } else { angle };
+                //print!("({}, {}) {}", pt.x, pt.y, angle);
                 cache[(pt.x * EYE_RANGE * 2) as usize + pt.y as usize] = angle;
             }
         }

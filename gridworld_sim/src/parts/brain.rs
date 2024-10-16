@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 pub struct Brain {
     pub fitness: Cell<f32>,
+    pub time_since_move: Cell<u16>,
     nn: Network,
 }
 
@@ -107,15 +108,27 @@ impl Brain {
             }
         }
 
-        let mut new_memory = [0.0f32; CREATURE_MEMORY_SIZE];
-        for i in 9..OUTPUTS_SIZE {
-            new_memory[i - 9] = response[i];
-        }
+        let new_memory = if CREATURE_MEMORY_SIZE > 0 {
+            let mut new_memory = [0.0f32; CREATURE_MEMORY_SIZE];
+            for i in 9..OUTPUTS_SIZE {
+                new_memory[i - 9] = response[i];
+            }
+            new_memory
+        } else {
+            [0.0f32; CREATURE_MEMORY_SIZE]
+        };
 
-        if max_r_index == 8 {
+        if max_r_index == 0 {
             (None, new_memory)
         } else {
-            (Some(Direction::from(max_r_index as u8)), new_memory)
+            (Some(Direction::from(max_r_index as u8 - 1)), new_memory)
+        }
+    }
+
+    pub(crate) fn not_moved(&self) {
+        self.time_since_move.set(self.time_since_move.get() + 1);
+        if self.time_since_move.get() > 25 {
+            self.add_fitness(-IDLE_PENALTY);
         }
     }
 }
