@@ -7,6 +7,7 @@ mod world;
 
 pub use consts::brain_io::*;
 pub use consts::energy::*;
+pub use consts::world::*;
 pub use grid::*;
 pub use grid_math::*;
 pub use half::f16;
