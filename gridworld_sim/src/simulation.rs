@@ -104,6 +104,9 @@ impl Simulation {
                 brain_ref.not_moved();
             }
         }
+        //if num_movements == 0 {
+        //    self.age.set(self.config.sim_generation_length);
+        //}
         num_movements
     }
 
@@ -197,6 +200,12 @@ impl Simulation {
             let inputs = creature.form_brain_inputs(&world);
             if let Some(brain) = creature.brain.upgrade() {
                 let (direction, new_memory) = brain.process(arr1(&inputs));
+
+                //if let Some(direction) = direction {
+                //    actions.push((creature, creature.pos.get().move_dir(direction)));
+                //} else {
+                //    actions.push((creature, creature.pos.get()));
+                //}
 
                 if CREATURE_MEMORY_SIZE > 0 {
                     creature.memory.set(new_memory);
