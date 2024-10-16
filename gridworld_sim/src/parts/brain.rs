@@ -137,11 +137,17 @@ impl Brain {
     fn new(config: &Config, nn: Network) -> Self {
         Self {
             nn,
-            fitness: Cell::new(0.0),
+            fitness: Cell::new(config.start_fitness),
+            time_since_move: Cell::new(0),
         }
     }
 
-    fn topology(config: &Config) -> [usize; 3] {
-        [INPUTS_SIZE, config.brain_neurons, OUTPUTS_SIZE]
+    fn topology(config: &Config) -> [usize; 4] {
+        [
+            INPUTS_SIZE,
+            config.brain_neurons,
+            config.brain_neurons,
+            OUTPUTS_SIZE,
+        ]
     }
 }
