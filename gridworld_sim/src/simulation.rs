@@ -3,6 +3,7 @@ pub use crate::*;
 use ::rand::rngs::OsRng;
 use ::rand::RngCore;
 use ndarray::{arr1, Array1};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::HashSet;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
